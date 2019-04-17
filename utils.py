@@ -1,6 +1,17 @@
 import torch.utils.data.Dataset
 import torch.nn as nn
 
+class Flatten(nn.Module):
+    def forward(self, x):
+        return x.view(x.size()[0], -1)
+
+def flatten(t):
+    t = t.reshape(1, -1)
+    t = t.squeeze()
+    return t      
+
+# third_tensor = torch.cat((first_tensor, second_tensor), 0)      
+
 class STFT_CQT_Dataset(Dataset):
     def __init__(self, D, C, stft_transform, cqt_transform):
         self.stft = D
@@ -83,3 +94,29 @@ class CQT2STFT(nn.Module):
 
     def forward(self, input):
         return self.main(input)        
+
+class CQT2STFT(nn.Module):
+    def __init__(self, ngpu):
+        super(CQT2STFT, self).__init__()
+        self.ngpu = ngpu
+
+        self.conv1 = nn.Conv1d(1, 16, 13, padding=6)
+        self.pool1 = nn.MaxPool1d(2)
+        self.bn1 = nn.BatchNorm1d(54)
+        self.relu1 = nn.ReLU(True)
+
+        self.conv2 = nn.Conv1d(16, 32, 3, padding=1)
+        self.pool2 = nn.MaxPool1d(2)
+        self.bn2 = nn.BatchNorm1d(27)
+        self.relu2 = nn.ReLU(True)
+
+        self.conv3 = nn.Conv1d(1, 16, 9, dilation=9)
+        self.bn3 = nn.BatchNorm1d(12)
+        self.relu3 = nn.ReLU(True)
+
+        self.conv4 = nn.Conv1d(16, 32, 3, padding=1)
+        self.bn4 = nn.BatchNorm1d(12)
+        self.relu4 = nn.ReLU(True)
+
+    def forward(self, input):
+        return self.main(input)    
