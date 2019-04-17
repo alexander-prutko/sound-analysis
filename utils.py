@@ -1,4 +1,4 @@
-import torch.utils.data.Dataset
+from torch.utils.data import Dataset
 import torch.nn as nn
 
 class Flatten(nn.Module):
@@ -13,15 +13,15 @@ def flatten(t):
 # third_tensor = torch.cat((first_tensor, second_tensor), 0)      
 
 class STFT_CQT_Dataset(Dataset):
-    def __init__(self, D, C, stft_transform, cqt_transform):
+    def __init__(self, D, C, stft_transform=None, cqt_transform=None):
         self.stft = D
         self.cqt = C
         self.stft_transform = stft_transform
         self.cqt_transform = cqt_transform
 
     def __len__(self):
-        d_len = D.shape[1]
-        c_len = C.shape[1]
+        d_len = self.stft.shape[1]
+        c_len = self.cqt.shape[1]
         assert d_len == c_len, "Lengths of STFT and CQT are not the same"
 
         return d_len
