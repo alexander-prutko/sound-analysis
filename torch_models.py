@@ -3,6 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
+import numpy
+
+def moore_penrose_inverse(m):
+    return np.matmul(np.linalg.inv(np.matmul(m.T,m)), m.T)
+
 class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.size()[0], -1)
@@ -11,8 +16,6 @@ def flatten(t):
     t = t.reshape(1, -1)
     t = t.squeeze()
     return t      
-
-# third_tensor = torch.cat((first_tensor, second_tensor), 0)      
 
 class STFT_CQT_Dataset(Dataset):
     def __init__(self, D, C, cqt_transform=None):
