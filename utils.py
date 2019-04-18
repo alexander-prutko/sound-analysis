@@ -1,5 +1,7 @@
 from torch.utils.data import Dataset
 import torch.nn as nn
+import torch.nn.functional as F
+import torch
 
 class Flatten(nn.Module):
     def forward(self, x):
@@ -95,28 +97,46 @@ class CQT2STFT(nn.Module):
     def forward(self, input):
         return self.main(input)        
 
-class CQT2STFT(nn.Module):
+class CQT2STFT_conv(nn.Module):
     def __init__(self, ngpu):
         super(CQT2STFT, self).__init__()
         self.ngpu = ngpu
 
         self.conv1 = nn.Conv1d(1, 16, 13, padding=6)
         self.pool1 = nn.MaxPool1d(2)
-        self.bn1 = nn.BatchNorm1d(54)
-        self.relu1 = nn.ReLU(True)
+        self.bn1 = nn.BatchNorm1d(16)
 
         self.conv2 = nn.Conv1d(16, 32, 3, padding=1)
         self.pool2 = nn.MaxPool1d(2)
-        self.bn2 = nn.BatchNorm1d(27)
-        self.relu2 = nn.ReLU(True)
+        self.bn2 = nn.BatchNorm1d(32)
 
         self.conv3 = nn.Conv1d(1, 16, 9, dilation=9)
-        self.bn3 = nn.BatchNorm1d(12)
-        self.relu3 = nn.ReLU(True)
+        self.bn3 = nn.BatchNorm1d(16)
 
         self.conv4 = nn.Conv1d(16, 32, 3, padding=1)
-        self.bn4 = nn.BatchNorm1d(12)
-        self.relu4 = nn.ReLU(True)
+        self.bn4 = nn.BatchNorm1d(32)
 
-    def forward(self, input):
-        return self.main(input)    
+        self.linear5 = nn.Linear(1248, 2050)
+        self.bn5 = nn.BatchNorm1d(2050)
+
+        self.linear6 = nn.Linear(2050, 2050)
+        self.bn6 = nn.BatchNorm1d(2050)
+
+        self.linear7 = nn.Linear(2050, 1025)
+
+    def forward(self, input): 
+        x = F.relu(self.bn1(self.pool1(self.conv1(input)))) # 108 x 1 -> 54 x 16
+        x = F.relu(self.bn2(self.pool2(self.conv2(x))))     # 54 x 16 -> 27 x 32
+
+        y = F.relu(self.bn3(self.conv3(input)))             # 108 x 1 -> 12 x 16
+        y = F.relu(self.bn4(self.conv4(y)))                 # 12 x 16 -> 12 x 32
+
+        xf = flatten(x) # 864
+        yf = flatten(y) # 384
+
+        z = torch.cat((first_tensor, second_tensor))        # 1248
+
+        z = F.relu(self.bn5(self.linear5(z)))               # 2050
+        z = F.relu(self.bn6(self.linear6(z)))               # 2050
+        z = F.tanh(self.linear7(z))                         # 1025
+        return z  
