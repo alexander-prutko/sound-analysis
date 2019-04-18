@@ -15,11 +15,9 @@ def flatten(t):
 # third_tensor = torch.cat((first_tensor, second_tensor), 0)      
 
 class STFT_CQT_Dataset(Dataset):
-    def __init__(self, D, C, stft_transform=None, cqt_transform=None):
+    def __init__(self, D, C, cqt_transform=None):
         self.stft = D
         self.cqt = C
-        self.stft_transform = stft_transform
-        self.cqt_transform = cqt_transform
 
     def __len__(self):
         d_len = self.stft.shape[1]
@@ -31,10 +29,6 @@ class STFT_CQT_Dataset(Dataset):
     def __getitem__(self, index):
         stft = self.stft[:, index]
         cqt = self.cqt[:, index]
-        if self.stft_transform is not None:
-            stft = self.stft_transform(stft)
-        if self.cqt_transform is not None:
-            cqt = self.cqt_transform(cqt)
         return (stft, cqt)
 
 class STFT2CQT(nn.Module):
@@ -66,6 +60,25 @@ class STFT2CQT(nn.Module):
 
     def forward(self, input):
         return self.main(input)
+
+def gen_stft2cqt(layers):
+    class STFT2CQT_gen(nn.Module):
+        def __init__(self, ngpu):
+            super(STFT2CQT_gen, self).__init__()
+            self.ngpu = ngpu
+            self.n_layers = len(layers)
+            self.linear = []
+            self.bn = []
+            for i in range(self.n_layers - 1):
+                self.linear.append(nn.Linear(layers[i], layers[i+1]))
+            for i in range(self.n_layers - 2):
+                self.bn.append(nn.BatchNorm1d(layers[i+1]))
+
+        def forward(self, x):
+            for i in range(self.n_layers - 2):
+                x = F.relu(self.bbn[i](self.linear[i](x)))
+            x = F.tanh(self.linear[-1](x))
+            return x
 
 class CQT2STFT(nn.Module):
     def __init__(self, ngpu):
